@@ -27,20 +27,38 @@ final class MusicLibrary: ObservableObject {
 
     func importURLs(_ urls: [URL]) {
         for url in urls {
-            let access = url.startAccessingSecurityScopedResource()
-            defer { if access { url.stopAccessingSecurityScopedResource() } }
-            if Self.isDirectory(url) { scanFolder(url, makeBookmark: true) }
-            else if Self.isAudio(url) { importAudioFile(url) }
+            if Self.isDirectory(url) {
+                scanFolder(url, makeBookmark: true)
+            } else if Self.isAudio(url) {
+                guard url.startAccessingSecurityScopedResource() else { importMessage = "The selected file is not accessible."; continue }
+                defer { url.stopAccessingSecurityScopedResource() }
+                importAudioFile(url)
+            }
         }
         persistTracks()
     }
 
     func scanFolder(_ folder: URL, makeBookmark: Bool = false) {
-        let access = folder.startAccessingSecurityScopedResource()
-        defer { if access { folder.stopAccessingSecurityScopedResource() } }
-        if makeBookmark, let data = try? folder.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) { try? data.write(to: bookmarkURL, options: .atomic) }
-        guard let enumerator = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) else { return }
-        while let file = enumerator.nextObject() as? URL { if Self.isAudio(file) { importAudioFile(file) } }
+        guard folder.startAccessingSecurityScopedResource() else { importMessage = "Folder access was not granted by Files."; return }
+        defer { folder.stopAccessingSecurityScopedResource() }
+        if makeBookmark, let data = try? folder.bookmarkData(options: [.minimalBookmark], includingResourceValuesForKeys: nil, relativeTo: nil) { try? data.write(to: bookmarkURL, options: .atomic) }
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        var coordinationError: NSError?
+        var foundAudioFiles = 0
+        coordinator.coordinate(readingItemAt: folder, options: [], error: &coordinationError) { coordinatedFolder in
+            guard let enumerator = FileManager.default.enumerator(at: coordinatedFolder, includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey], options: [.skipsHiddenFiles]) else { importMessage = "Files could not list this folder."; return }
+            while let file = enumerator.nextObject() as? URL {
+                guard Self.isAudio(file) else { continue }
+                foundAudioFiles += 1
+                guard file.startAccessingSecurityScopedResource() else { continue }
+                do {
+                    defer { file.stopAccessingSecurityScopedResource() }
+                    importAudioFile(file)
+                }
+            }
+        }
+        if let coordinationError { importMessage = "Folder access failed: \(coordinationError.localizedDescription)" }
+        else if makeBookmark && foundAudioFiles == 0 { importMessage = "No MP3, M4A or WAV files were found in the selected folder." }
         persistTracks()
     }
 
