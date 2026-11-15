@@ -29,7 +29,7 @@ final class MusicLibrary: ObservableObject {
         for url in urls {
             let access = url.startAccessingSecurityScopedResource()
             defer { if access { url.stopAccessingSecurityScopedResource() } }
-            if url.hasDirectoryPath { scanFolder(url, makeBookmark: true) }
+            if Self.isDirectory(url) { scanFolder(url, makeBookmark: true) }
             else if Self.isAudio(url) { importAudioFile(url) }
         }
         persistTracks()
@@ -88,6 +88,12 @@ final class MusicLibrary: ObservableObject {
     }
 
     private static func isAudio(_ url: URL) -> Bool { ["mp3", "m4a", "wav", "flac"].contains(url.pathExtension.lowercased()) }
+
+    private static func isDirectory(_ url: URL) -> Bool {
+        if let values = try? url.resourceValues(forKeys: [.isDirectoryKey]), values.isDirectory == true { return true }
+        var isDirectory: ObjCBool = false
+        return FileManager.default.fileExists(atPath: url.path, isDirectory: &isDirectory) && isDirectory.boolValue
+    }
 
     private func addTrack(_ url: URL) {
         guard !tracks.contains(where: { $0.url.standardizedFileURL == url.standardizedFileURL }) else { return }

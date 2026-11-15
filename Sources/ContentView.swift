@@ -21,8 +21,11 @@ struct ContentView: View {
     @AppStorage("PocketWaveLanguage") private var languageCode = "ru"
     @AppStorage("PocketWaveAccentIndex") private var accentIndex = 0
 
-    private let accentOptions: [Color] = [Color(red: 1, green: 0.36, blue: 0.12), Color(red: 0.68, green: 0.91, blue: 0.16), Color(red: 0.22, green: 0.64, blue: 1), Color(red: 0.76, green: 0.42, blue: 1)]
-    private var accent: Color { accentOptions[min(max(accentIndex, 0), accentOptions.count - 1)] }
+    private let accentOptions: [Color] = [Color(red: 1, green: 0.36, blue: 0.12), Color(red: 0.68, green: 0.91, blue: 0.16), Color(red: 0.22, green: 0.64, blue: 1), Color(red: 0.76, green: 0.42, blue: 1), .white, .black]
+    private var accent: Color {
+        switch accentIndex { case 4: return lightTheme ? Color(red: 0.16, green: 0.17, blue: 0.18) : .white; case 5: return lightTheme ? .black : Color(red: 0.88, green: 0.89, blue: 0.90); default: return accentOptions[min(max(accentIndex, 0), 3)] }
+    }
+    private var accentForeground: Color { accentIndex >= 4 && lightTheme ? .white : .black }
     private var canvas: Color { lightTheme ? Color(red: 0.94, green: 0.94, blue: 0.92) : Color(red: 0.055, green: 0.06, blue: 0.065) }
     private var ink: Color { lightTheme ? Color(red: 0.08, green: 0.09, blue: 0.10) : .white }
     private func text(_ key: String) -> String { playerText(key, language: languageCode) }
@@ -116,7 +119,7 @@ struct ContentView: View {
             Button { player.toggleShuffle(); impact() } label: { Image(systemName: "shuffle").font(.system(size: 17, weight: .semibold)).foregroundColor(player.isShuffle ? accent : ink.opacity(0.42)).frame(width: 44, height: 54) }
             Spacer()
             Button { player.previous(); impact() } label: { Image(systemName: "backward.end.fill").font(.system(size: 21)).foregroundColor(ink).frame(width: 48, height: 54) }
-            Button { player.togglePlayPause(); impact() } label: { Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.system(size: 23, weight: .bold)).foregroundColor(.black).offset(x: player.isPlaying ? 0 : 2).frame(width: 68, height: 68).background(accent, in: Circle()).shadow(color: accent.opacity(0.28), radius: 18, y: 5) }.buttonStyle(PressButtonStyle())
+            Button { player.togglePlayPause(); impact() } label: { Image(systemName: player.isPlaying ? "pause.fill" : "play.fill").font(.system(size: 23, weight: .bold)).foregroundColor(accentForeground).offset(x: player.isPlaying ? 0 : 2).frame(width: 68, height: 68).background(accent, in: Circle()).overlay(Circle().stroke(ink.opacity(accentIndex == 5 ? 0.3 : 0), lineWidth: 1)).shadow(color: accent.opacity(0.28), radius: 18, y: 5) }.buttonStyle(PressButtonStyle())
             Button { player.next(); impact() } label: { Image(systemName: "forward.end.fill").font(.system(size: 21)).foregroundColor(ink).frame(width: 48, height: 54) }
             Spacer()
             Button { player.cycleRepeat(); impact() } label: { VStack(spacing: 2) { Image(systemName: player.repeatMode == .one ? "repeat.1" : "repeat").font(.system(size: 17, weight: .semibold)); Text(player.repeatMode == .off ? "" : "ON").font(.system(size: 7, weight: .black, design: .monospaced)) }.foregroundColor(player.repeatMode == .off ? ink.opacity(0.42) : accent).frame(width: 44, height: 54) }
@@ -336,6 +339,8 @@ private func playerText(_ key: String, language: String) -> String {
         "color_1": ("Лаймовый", "Лаймовий", "Lime"),
         "color_2": ("Синий", "Синій", "Blue"),
         "color_3": ("Фиолетовый", "Фіолетовий", "Violet"),
+        "color_4": ("Белый", "Білий", "White"),
+        "color_5": ("Чёрный", "Чорний", "Black"),
         "new_mixtape": ("НОВЫЙ МИКСТЕЙП", "НОВИЙ МІКСТЕЙП", "NEW MIXTAPE"),
         "album_name": ("Название альбома", "Назва альбому", "Album name"),
         "create_album": ("СОЗДАТЬ АЛЬБОМ", "СТВОРИТИ АЛЬБОМ", "CREATE ALBUM"),
