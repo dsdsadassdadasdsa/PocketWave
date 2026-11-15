@@ -10,7 +10,6 @@ struct PocketWaveApp: App {
             ContentView()
                 .environmentObject(library)
                 .environmentObject(player)
-                .preferredColorScheme(.dark)
         }
     }
 }
