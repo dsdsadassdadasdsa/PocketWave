@@ -17,6 +17,8 @@ struct ContentView: View {
     @State private var showArtworkPicker = false
     @State private var selectedPlaylistID: UUID?
     @State private var selectedImage: UIImage?
+    @State private var pendingImportCount: Int?
+    @State private var importSummary: String?
     @AppStorage("PocketWaveLightTheme") private var lightTheme = false
     @AppStorage("PocketWaveLanguage") private var languageCode = "ru"
     @AppStorage("PocketWaveAccentIndex") private var accentIndex = 0
@@ -29,6 +31,12 @@ struct ContentView: View {
     private var canvas: Color { lightTheme ? Color(red: 0.94, green: 0.94, blue: 0.92) : Color(red: 0.055, green: 0.06, blue: 0.065) }
     private var ink: Color { lightTheme ? Color(red: 0.08, green: 0.09, blue: 0.10) : .white }
     private func text(_ key: String) -> String { playerText(key, language: languageCode) }
+    private func finishImport() {
+        guard let count = pendingImportCount else { return }
+        pendingImportCount = nil
+        withAnimation(.spring(response: 0.38, dampingFraction: 0.78)) { tab = .tracks }
+        importSummary = count > 0 ? String(format: text("import_count"), count) : text("import_none")
+    }
     var body: some View {
         ZStack {
             canvas.ignoresSafeArea()
@@ -47,13 +55,20 @@ struct ContentView: View {
             }.padding(.horizontal, 20).padding(.top, 9)
             if locked { lockOverlay }
         }
-        .sheet(item: $pickerMode) { mode in DocumentPicker(folders: mode == .folder) { urls in library.importURLs(urls) }.id(mode.id).ignoresSafeArea() }
+        .sheet(item: $pickerMode, onDismiss: finishImport) { mode in
+            DocumentPicker(folders: mode == .folder) { urls in
+                let previousCount = library.tracks.count
+                library.importURLs(urls)
+                pendingImportCount = max(0, library.tracks.count - previousCount)
+                pickerMode = nil
+            }.id(mode.id).ignoresSafeArea()
+        }
         .sheet(isPresented: $showCreate) { CreatePlaylistSheet(isLight: lightTheme, languageCode: languageCode, accentColor: accent) { library.createPlaylist(name: $0) } }
         .sheet(isPresented: $showArtworkPicker, onDismiss: saveSelectedArtwork) { ImagePicker(image: $selectedImage) }
         .sheet(isPresented: $showFullPlayer) { fullPlayer }
-        .alert(text("error_title"), isPresented: Binding(get: { library.importMessage != nil || player.playbackError != nil }, set: { if !$0 { library.importMessage = nil; player.playbackError = nil } })) {
-            Button(text("ok"), role: .cancel) { library.importMessage = nil; player.playbackError = nil }
-        } message: { Text(player.playbackError ?? library.importMessage ?? "") }
+        .alert(text(player.playbackError != nil || library.importMessage != nil ? "error_title" : "import_result"), isPresented: Binding(get: { library.importMessage != nil || player.playbackError != nil || importSummary != nil }, set: { if !$0 { library.importMessage = nil; player.playbackError = nil; importSummary = nil } })) {
+            Button(text("ok"), role: .cancel) { library.importMessage = nil; player.playbackError = nil; importSummary = nil }
+        } message: { Text(player.playbackError ?? library.importMessage ?? importSummary ?? "") }
         .preferredColorScheme(lightTheme ? .light : .dark)
         .animation(.easeInOut(duration: 0.24), value: lightTheme)
     }
@@ -157,6 +172,7 @@ struct ContentView: View {
             Button { pickerMode = .audio } label: { Text(text("choose_files")).font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(accent).frame(maxWidth: .infinity).padding(15).background(accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12)) }
             Spacer()
             Text(text("documents_hint")).font(.system(size: 10)).foregroundColor(ink.opacity(0.3)).multilineTextAlignment(.center)
+            Text(String(format: text("track_count"), library.tracks.count)).font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundColor(accent.opacity(0.8)).padding(.top, 4)
         }.padding(.top, 12)
     }
 
@@ -352,7 +368,10 @@ private func playerText(_ key: String, language: String) -> String {
         "album_name": ("Название альбома", "Назва альбому", "Album name"),
         "create_album": ("СОЗДАТЬ АЛЬБОМ", "СТВОРИТИ АЛЬБОМ", "CREATE ALBUM"),
         "error_title": ("ОШИБКА", "ПОМИЛКА", "ERROR"),
-        "ok": ("ПОНЯТНО", "ЗРОЗУМІЛО", "OK")
+        "ok": ("ПОНЯТНО", "ЗРОЗУМІЛО", "OK"),
+        "import_result": ("ИМПОРТ", "ІМПОРТ", "IMPORT"),
+        "import_count": ("Добавлено треков: %d", "Додано треків: %d", "Tracks added: %d"),
+        "import_none": ("Новых треков не найдено", "Нових треків не знайдено", "No new tracks found")
     ]
     guard let value = values[key] else { return key }
     switch language { case "ru": return value.0; case "uk": return value.1; default: return value.2 }
