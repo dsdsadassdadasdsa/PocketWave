@@ -45,7 +45,7 @@ struct ContentView: View {
 
     private var header: some View {
         HStack {
-            VStack(alignment: .leading, spacing: 2) { Text("POCKETWAVE").font(.system(size: 12, weight: .black, design: .rounded)).kerning(2.2).foregroundColor(orange); Text("PORTABLE SOUND SYSTEM").font(.system(size: 8, weight: .medium, design: .monospaced)).kerning(1.3).foregroundColor(.white.opacity(0.42)) }
+            VStack(alignment: .leading, spacing: 2) { Text("POCKETWAVE").font(.system(size: 12, weight: .black, design: .rounded)).foregroundColor(orange); Text("PORTABLE SOUND SYSTEM").font(.system(size: 8, weight: .medium, design: .monospaced)).foregroundColor(.white.opacity(0.42)) }
             Spacer()
             Button { pickerFolders = true; showPicker = true; impact() } label: { Image(systemName: "folder.badge.plus").font(.system(size: 17, weight: .semibold)).foregroundColor(.white).frame(width: 42, height: 42).background(.white.opacity(0.07), in: Circle()).overlay(Circle().stroke(.white.opacity(0.1), lineWidth: 1)) }
             Button { locked = true; impact() } label: { Image(systemName: "lock.fill").font(.system(size: 15, weight: .semibold)).foregroundColor(orange).frame(width: 42, height: 42).background(orange.opacity(0.1), in: Circle()) }
@@ -54,13 +54,13 @@ struct ContentView: View {
 
     private var nowPlaying: some View {
         VStack(spacing: 8) {
-            HStack { Text("SIGNAL / 001").font(.system(size: 9, weight: .bold, design: .monospaced)).kerning(1.8).foregroundColor(.white.opacity(0.45)); Spacer(); equalizer.tint(orange) }
+            HStack { Text("SIGNAL / 001").font(.system(size: 9, weight: .bold, design: .monospaced)).foregroundColor(.white.opacity(0.45)); Spacer(); equalizer.tint(orange) }
             Spacer(minLength: 3)
             Button { showFullPlayer = true; impact() } label: { albumArt(size: 255, track: player.currentTrack).matchedGeometryEffect(id: "albumArt", in: artworkSpace) }
                 .buttonStyle(.plain)
             VStack(spacing: 5) {
                 Text(player.currentTrack?.displayTitle ?? "NOTHING PLAYING").font(.system(size: 24, weight: .bold, design: .rounded)).lineLimit(1).minimumScaleFactor(0.75).foregroundColor(.white)
-                Text(player.currentTrack?.artist.isEmpty == false ? player.currentTrack!.artist : "ADD TRACKS TO BEGIN").font(.system(size: 11, weight: .medium, design: .monospaced)).kerning(1.5).foregroundColor(.white.opacity(0.48)).lineLimit(1)
+                Text(player.currentTrack?.artist.isEmpty == false ? player.currentTrack!.artist : "ADD TRACKS TO BEGIN").font(.system(size: 11, weight: .medium, design: .monospaced)).foregroundColor(.white.opacity(0.48)).lineLimit(1)
             }.padding(.top, 8)
             timeline
             controls
@@ -105,7 +105,7 @@ struct ContentView: View {
         HStack(spacing: 0) {
             ForEach(PlayerTab.allCases, id: \.self) { item in
                 Button { withAnimation(.spring(response: 0.34, dampingFraction: 0.76)) { tab = item }; impact() } label: {
-                    VStack(spacing: 5) { Image(systemName: icon(for: item)).font(.system(size: 16, weight: .semibold)); Text(item.rawValue).font(.system(size: 8, weight: .black, design: .monospaced)).kerning(0.8) }.foregroundColor(tab == item ? orange : .white.opacity(0.36)).frame(maxWidth: .infinity).frame(height: 51).contentShape(Rectangle())
+                    VStack(spacing: 5) { Image(systemName: icon(for: item)).font(.system(size: 16, weight: .semibold)); Text(item.rawValue).font(.system(size: 8, weight: .black, design: .monospaced)) }.foregroundColor(tab == item ? orange : .white.opacity(0.36)).frame(maxWidth: .infinity).frame(height: 51).contentShape(Rectangle())
                 }.buttonStyle(.plain)
             }
         }.padding(.top, 4).overlay(alignment: .top) { Rectangle().fill(.white.opacity(0.08)).frame(height: 1) }
@@ -113,9 +113,9 @@ struct ContentView: View {
 
     private var foldersView: some View {
         VStack(spacing: 14) {
-            Text("YOUR MUSIC FILES").font(.system(size: 10, weight: .black, design: .monospaced)).kerning(1.5).foregroundColor(.white.opacity(0.48)).frame(maxWidth: .infinity, alignment: .leading)
-            Button { pickerFolders = true; showPicker = true } label: { VStack(spacing: 12) { Image(systemName: "folder.badge.plus").font(.system(size: 32)).foregroundColor(orange); Text("Choose music folder").font(.system(size: 15, weight: .bold)); Text("MP3 · M4A · WAV · FLAC").font(.system(size: 9, weight: .medium, design: .monospaced)).kerning(1).foregroundColor(.white.opacity(0.42)) }.frame(maxWidth: .infinity).padding(.vertical, 30).background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.08), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))) }
-            Button { pickerFolders = false; showPicker = true } label: { Text("OR SELECT AUDIO FILES").font(.system(size: 10, weight: .bold, design: .monospaced)).kerning(1.2).foregroundColor(orange).frame(maxWidth: .infinity).padding(15).background(orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12)) }
+            Text("YOUR MUSIC FILES").font(.system(size: 10, weight: .black, design: .monospaced)).foregroundColor(.white.opacity(0.48)).frame(maxWidth: .infinity, alignment: .leading)
+            Button { pickerFolders = true; showPicker = true } label: { VStack(spacing: 12) { Image(systemName: "folder.badge.plus").font(.system(size: 32)).foregroundColor(orange); Text("Choose music folder").font(.system(size: 15, weight: .bold)); Text("MP3 · M4A · WAV · FLAC").font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundColor(.white.opacity(0.42)) }.frame(maxWidth: .infinity).padding(.vertical, 30).background(.white.opacity(0.045), in: RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(.white.opacity(0.08), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))) }
+            Button { pickerFolders = false; showPicker = true } label: { Text("OR SELECT AUDIO FILES").font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(orange).frame(maxWidth: .infinity).padding(15).background(orange.opacity(0.1), in: RoundedRectangle(cornerRadius: 12)) }
             Spacer()
             Text("Files shared from a computer appear in the app's Documents folder.").font(.system(size: 10)).foregroundColor(.white.opacity(0.3)).multilineTextAlignment(.center)
         }.padding(.top, 12)
@@ -123,7 +123,7 @@ struct ContentView: View {
 
     private var albumsView: some View {
         VStack(spacing: 12) {
-            HStack { Text("YOUR MIXTAPES").font(.system(size: 10, weight: .black, design: .monospaced)).kerning(1.5).foregroundColor(.white.opacity(0.48)); Spacer(); Button { showCreate = true; impact() } label: { Label("NEW", systemImage: "plus").font(.system(size: 9, weight: .black, design: .monospaced)).foregroundColor(orange).padding(.horizontal, 12).padding(.vertical, 8).background(orange.opacity(0.12), in: Capsule()) } }
+            HStack { Text("YOUR MIXTAPES").font(.system(size: 10, weight: .black, design: .monospaced)).foregroundColor(.white.opacity(0.48)); Spacer(); Button { showCreate = true; impact() } label: { Label("NEW", systemImage: "plus").font(.system(size: 9, weight: .black, design: .monospaced)).foregroundColor(orange).padding(.horizontal, 12).padding(.vertical, 8).background(orange.opacity(0.12), in: Capsule()) } }
             if library.playlists.isEmpty { Spacer(); Image(systemName: "square.stack.3d.up").font(.system(size: 35)).foregroundColor(.white.opacity(0.18)); Text("No albums yet").font(.system(size: 14, weight: .semibold)).foregroundColor(.white.opacity(0.5)); Text("Make a mixtape from your tracks").font(.system(size: 11)).foregroundColor(.white.opacity(0.3)); Spacer() }
             else { ScrollView { LazyVStack(spacing: 10) { ForEach(library.playlists) { playlist in playlistRow(playlist) } }.padding(.vertical, 2) } }
             Spacer(minLength: 0)
@@ -146,8 +146,8 @@ struct ContentView: View {
 
     private func trackList(_ tracks: [Track]) -> some View {
         VStack(spacing: 12) {
-            HStack { Text("LIBRARY / \(tracks.count)").font(.system(size: 10, weight: .black, design: .monospaced)).kerning(1.5).foregroundColor(.white.opacity(0.48)); Spacer(); Button { pickerFolders = false; showPicker = true } label: { Image(systemName: "plus").foregroundColor(orange).frame(width: 34, height: 34).background(orange.opacity(0.1), in: Circle()) } }
-            if tracks.isEmpty { Spacer(); Image(systemName: "waveform").font(.system(size: 34)).foregroundColor(.white.opacity(0.2)); Text("Your library is quiet").font(.system(size: 15, weight: .semibold)).foregroundColor(.white.opacity(0.5)); Button("IMPORT MUSIC") { pickerFolders = true; showPicker = true }.font(.system(size: 10, weight: .black, design: .monospaced)).kerning(1).foregroundColor(orange).padding(.top, 4); Spacer() }
+            HStack { Text("LIBRARY / \(tracks.count)").font(.system(size: 10, weight: .black, design: .monospaced)).foregroundColor(.white.opacity(0.48)); Spacer(); Button { pickerFolders = false; showPicker = true } label: { Image(systemName: "plus").foregroundColor(orange).frame(width: 34, height: 34).background(orange.opacity(0.1), in: Circle()) } }
+            if tracks.isEmpty { Spacer(); Image(systemName: "waveform").font(.system(size: 34)).foregroundColor(.white.opacity(0.2)); Text("Your library is quiet").font(.system(size: 15, weight: .semibold)).foregroundColor(.white.opacity(0.5)); Button("IMPORT MUSIC") { pickerFolders = true; showPicker = true }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundColor(orange).padding(.top, 4); Spacer() }
             else { ScrollView { LazyVStack(spacing: 5) { ForEach(tracks) { track in trackRow(track) } }.padding(.vertical, 2) } }
         }.padding(.top, 12)
     }
@@ -165,15 +165,15 @@ struct ContentView: View {
     private var fullPlayer: some View {
         ZStack { Color(red: 0.055, green: 0.06, blue: 0.065).ignoresSafeArea(); VStack(spacing: 12) {
             Capsule().fill(.white.opacity(0.18)).frame(width: 35, height: 4).padding(.top, 9)
-            HStack { Text("NOW / PLAYING").font(.system(size: 9, weight: .black, design: .monospaced)).kerning(1.8).foregroundColor(orange); Spacer(); Button { showFullPlayer = false } label: { Image(systemName: "chevron.down").foregroundColor(.white.opacity(0.6)).frame(width: 34, height: 34) } }.padding(.top, 5)
+            HStack { Text("NOW / PLAYING").font(.system(size: 9, weight: .black, design: .monospaced)).foregroundColor(orange); Spacer(); Button { showFullPlayer = false } label: { Image(systemName: "chevron.down").foregroundColor(.white.opacity(0.6)).frame(width: 34, height: 34) } }.padding(.top, 5)
             Spacer(minLength: 4); albumArt(size: 290, track: player.currentTrack).matchedGeometryEffect(id: "albumArt", in: artworkSpace).rotationEffect(.degrees(player.isPlaying ? 4 : 0)).animation(.spring(response: 0.6, dampingFraction: 0.62).repeatForever(autoreverses: true), value: player.isPlaying)
-            VStack(spacing: 5) { Text(player.currentTrack?.displayTitle ?? "NOTHING PLAYING").font(.system(size: 24, weight: .bold, design: .rounded)).lineLimit(1); Text(player.currentTrack?.artist ?? "ADD TRACKS TO BEGIN").font(.system(size: 10, weight: .medium, design: .monospaced)).kerning(1).foregroundColor(.white.opacity(0.48)) }.padding(.top, 6)
+            VStack(spacing: 5) { Text(player.currentTrack?.displayTitle ?? "NOTHING PLAYING").font(.system(size: 24, weight: .bold, design: .rounded)).lineLimit(1); Text(player.currentTrack?.artist ?? "ADD TRACKS TO BEGIN").font(.system(size: 10, weight: .medium, design: .monospaced)).foregroundColor(.white.opacity(0.48)) }.padding(.top, 6)
             timeline.padding(.horizontal, 3); controls.padding(.top, 7); Spacer(minLength: 3)
         }.padding(.horizontal, 24) }
     }
 
     private var lockOverlay: some View {
-        ZStack { Color.black.opacity(0.93).ignoresSafeArea(); VStack(spacing: 20) { Image(systemName: "lock.fill").font(.system(size: 35)).foregroundColor(orange); Text("PLAYER LOCKED").font(.system(size: 13, weight: .black, design: .monospaced)).kerning(2); Text("Touch and hold to unlock").font(.system(size: 11)).foregroundColor(.white.opacity(0.42)); Circle().fill(orange.opacity(0.13)).frame(width: 88, height: 88).overlay(Image(systemName: "lock.open").font(.system(size: 25)).foregroundColor(orange)).onLongPressGesture(minimumDuration: 1.4, pressing: { pressing in if pressing { unlockStart = Date() } }, perform: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { locked = false }; impact() }) }.contentShape(Rectangle()) }
+        ZStack { Color.black.opacity(0.93).ignoresSafeArea(); VStack(spacing: 20) { Image(systemName: "lock.fill").font(.system(size: 35)).foregroundColor(orange); Text("PLAYER LOCKED").font(.system(size: 13, weight: .black, design: .monospaced)); Text("Touch and hold to unlock").font(.system(size: 11)).foregroundColor(.white.opacity(0.42)); Circle().fill(orange.opacity(0.13)).frame(width: 88, height: 88).overlay(Image(systemName: "lock.open").font(.system(size: 25)).foregroundColor(orange)).onLongPressGesture(minimumDuration: 1.4, pressing: { pressing in if pressing { unlockStart = Date() } }, perform: { withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) { locked = false }; impact() }) }.contentShape(Rectangle()) }
     }
 
     private func albumArt(size: CGFloat, track: Track?) -> some View {
@@ -211,7 +211,7 @@ private struct CreatePlaylistSheet: View {
     @Environment(\.dismiss) private var dismiss
     @State private var name = ""
     let onCreate: (String) -> Void
-    var body: some View { VStack(alignment: .leading, spacing: 16) { Text("NEW MIXTAPE").font(.system(size: 12, weight: .black, design: .monospaced)).kerning(1.4); TextField("Album name", text: $name).padding(13).background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 11)); Button { onCreate(name); dismiss() } label: { Text("CREATE ALBUM").font(.system(size: 11, weight: .black, design: .monospaced)).kerning(1.2).frame(maxWidth: .infinity).padding(15).background(Color(red: 1, green: 0.36, blue: 0.12), in: RoundedRectangle(cornerRadius: 12)).foregroundColor(.black) }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) }.padding(22).background(Color(red: 0.07, green: 0.07, blue: 0.08)).preferredColorScheme(.dark) }
+    var body: some View { VStack(alignment: .leading, spacing: 16) { Text("NEW MIXTAPE").font(.system(size: 12, weight: .black, design: .monospaced)); TextField("Album name", text: $name).padding(13).background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 11)); Button { onCreate(name); dismiss() } label: { Text("CREATE ALBUM").font(.system(size: 11, weight: .black, design: .monospaced)).frame(maxWidth: .infinity).padding(15).background(Color(red: 1, green: 0.36, blue: 0.12), in: RoundedRectangle(cornerRadius: 12)).foregroundColor(.black) }.disabled(name.trimmingCharacters(in: .whitespaces).isEmpty) }.padding(22).background(Color(red: 0.07, green: 0.07, blue: 0.08)).preferredColorScheme(.dark) }
 }
 
 private struct ImagePicker: UIViewControllerRepresentable {
