@@ -63,7 +63,7 @@ final class MusicLibrary: ObservableObject {
         func value(_ key: AVMetadataIdentifier) -> String { AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: key).first?.stringValue ?? "" }
         let artwork = AVMetadataItem.metadataItems(from: metadata, filteredByIdentifier: .commonIdentifierArtwork).first?.dataValue
         let duration = CMTimeGetSeconds(asset.duration)
-        tracks.append(Track(title: value(.commonIdentifierTitle), artist: value(.commonIdentifierArtist), album: value(.commonIdentifierAlbum), url: url, duration: duration.isFinite ? duration : 0, artworkData: artwork))
+        tracks.append(Track(title: value(.commonIdentifierTitle), artist: value(.commonIdentifierArtist), album: value(.commonIdentifierAlbumName), url: url, duration: duration.isFinite ? duration : 0, artworkData: artwork))
         tracks.sort { $0.displayTitle.localizedCaseInsensitiveCompare($1.displayTitle) == .orderedAscending }
     }
 
