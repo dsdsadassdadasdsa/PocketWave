@@ -27,20 +27,23 @@ final class MusicLibrary: ObservableObject {
 
     func importURLs(_ urls: [URL]) {
         for url in urls {
-            if Self.isDirectory(url) {
-                scanFolder(url, makeBookmark: true)
-            } else if Self.isAudio(url) {
-                guard url.startAccessingSecurityScopedResource() else { importMessage = "The selected file is not accessible."; continue }
+            guard url.startAccessingSecurityScopedResource() else { importMessage = "The selected item is not accessible."; continue }
+            do {
                 defer { url.stopAccessingSecurityScopedResource() }
-                importAudioFile(url)
+                if Self.isDirectory(url) {
+                    scanFolder(url, makeBookmark: true, alreadyAccessing: true)
+                } else if Self.isAudio(url) {
+                    importAudioFile(url)
+                }
             }
         }
         persistTracks()
     }
 
-    func scanFolder(_ folder: URL, makeBookmark: Bool = false) {
-        guard folder.startAccessingSecurityScopedResource() else { importMessage = "Folder access was not granted by Files."; return }
-        defer { folder.stopAccessingSecurityScopedResource() }
+    func scanFolder(_ folder: URL, makeBookmark: Bool = false, alreadyAccessing: Bool = false) {
+        let startedAccess = alreadyAccessing || folder.startAccessingSecurityScopedResource()
+        guard startedAccess else { importMessage = "Folder access was not granted by Files."; return }
+        defer { if !alreadyAccessing { folder.stopAccessingSecurityScopedResource() } }
         if makeBookmark, let data = try? folder.bookmarkData(options: [.minimalBookmark], includingResourceValuesForKeys: nil, relativeTo: nil) { try? data.write(to: bookmarkURL, options: .atomic) }
         let coordinator = NSFileCoordinator(filePresenter: nil)
         var coordinationError: NSError?

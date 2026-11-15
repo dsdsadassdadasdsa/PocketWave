@@ -2,14 +2,14 @@ import SwiftUI
 import UniformTypeIdentifiers
 
 private enum PlayerTab: String, CaseIterable { case now = "NOW", tracks = "TRACKS", folders = "FOLDERS", albums = "ALBUMS" }
+private enum PickerMode: String, Identifiable { case folder, audio; var id: String { rawValue } }
 
 struct ContentView: View {
     @EnvironmentObject private var library: MusicLibrary
     @EnvironmentObject private var player: AudioPlayerManager
     @Namespace private var artworkSpace
     @State private var tab: PlayerTab = .now
-    @State private var showPicker = false
-    @State private var pickerFolders = false
+    @State private var pickerMode: PickerMode?
     @State private var showCreate = false
     @State private var showFullPlayer = false
     @State private var locked = false
@@ -47,7 +47,7 @@ struct ContentView: View {
             }.padding(.horizontal, 20).padding(.top, 9)
             if locked { lockOverlay }
         }
-        .sheet(isPresented: $showPicker) { DocumentPicker(folders: pickerFolders) { urls in library.importURLs(urls) } .ignoresSafeArea() }
+        .sheet(item: $pickerMode) { mode in DocumentPicker(folders: mode == .folder) { urls in library.importURLs(urls) }.id(mode.id).ignoresSafeArea() }
         .sheet(isPresented: $showCreate) { CreatePlaylistSheet(isLight: lightTheme, languageCode: languageCode, accentColor: accent) { library.createPlaylist(name: $0) } }
         .sheet(isPresented: $showArtworkPicker, onDismiss: saveSelectedArtwork) { ImagePicker(image: $selectedImage) }
         .sheet(isPresented: $showFullPlayer) { fullPlayer }
@@ -62,7 +62,7 @@ struct ContentView: View {
         HStack {
             VStack(alignment: .leading, spacing: 2) { Text("POCKETWAVE").font(.system(size: 12, weight: .black, design: .rounded)).foregroundColor(accent); Text(text("subtitle")).font(.system(size: 8, weight: .medium, design: .monospaced)).foregroundColor(ink.opacity(0.48)) }
             Spacer()
-            Button { pickerFolders = true; showPicker = true; impact() } label: { Image(systemName: "folder.badge.plus").font(.system(size: 17, weight: .semibold)).foregroundColor(ink).frame(width: 42, height: 42).background(ink.opacity(0.07), in: Circle()).overlay(Circle().stroke(ink.opacity(0.1), lineWidth: 1)) }
+            Button { pickerMode = .folder; impact() } label: { Image(systemName: "folder.badge.plus").font(.system(size: 17, weight: .semibold)).foregroundColor(ink).frame(width: 42, height: 42).background(ink.opacity(0.07), in: Circle()).overlay(Circle().stroke(ink.opacity(0.1), lineWidth: 1)) }
             Button { locked = true; impact() } label: { Image(systemName: "lock.fill").font(.system(size: 15, weight: .semibold)).foregroundColor(accent).frame(width: 42, height: 42).background(accent.opacity(0.1), in: Circle()) }
             settingsMenu
         }.padding(.bottom, 16)
@@ -153,8 +153,8 @@ struct ContentView: View {
     private var foldersView: some View {
         VStack(spacing: 14) {
             Text(text("music_files")).font(.system(size: 10, weight: .black, design: .monospaced)).foregroundColor(ink.opacity(0.48)).frame(maxWidth: .infinity, alignment: .leading)
-            Button { pickerFolders = true; showPicker = true } label: { VStack(spacing: 12) { Image(systemName: "folder.badge.plus").font(.system(size: 32)).foregroundColor(accent); Text(text("choose_folder")).font(.system(size: 15, weight: .bold)); Text("MP3 · M4A · WAV · FLAC").font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundColor(ink.opacity(0.42)) }.frame(maxWidth: .infinity).padding(.vertical, 30).background(ink.opacity(0.045), in: RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(ink.opacity(0.08), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))) }
-            Button { pickerFolders = false; showPicker = true } label: { Text(text("choose_files")).font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(accent).frame(maxWidth: .infinity).padding(15).background(accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12)) }
+            Button { pickerMode = .folder } label: { VStack(spacing: 12) { Image(systemName: "folder.badge.plus").font(.system(size: 32)).foregroundColor(accent); Text(text("choose_folder")).font(.system(size: 15, weight: .bold)); Text("MP3 · M4A · WAV · FLAC").font(.system(size: 9, weight: .medium, design: .monospaced)).foregroundColor(ink.opacity(0.42)) }.frame(maxWidth: .infinity).padding(.vertical, 30).background(ink.opacity(0.045), in: RoundedRectangle(cornerRadius: 18)).overlay(RoundedRectangle(cornerRadius: 18).stroke(ink.opacity(0.08), style: StrokeStyle(lineWidth: 1, dash: [4, 4]))) }
+            Button { pickerMode = .audio } label: { Text(text("choose_files")).font(.system(size: 10, weight: .bold, design: .monospaced)).foregroundColor(accent).frame(maxWidth: .infinity).padding(15).background(accent.opacity(0.1), in: RoundedRectangle(cornerRadius: 12)) }
             Spacer()
             Text(text("documents_hint")).font(.system(size: 10)).foregroundColor(ink.opacity(0.3)).multilineTextAlignment(.center)
         }.padding(.top, 12)
@@ -185,8 +185,8 @@ struct ContentView: View {
 
     private func trackList(_ tracks: [Track]) -> some View {
         VStack(spacing: 12) {
-            HStack { Text("\(text("library_title")) / \(tracks.count)").font(.system(size: 10, weight: .black, design: .monospaced)).foregroundColor(ink.opacity(0.48)); Spacer(); Button { pickerFolders = false; showPicker = true } label: { Image(systemName: "plus").foregroundColor(accent).frame(width: 34, height: 34).background(accent.opacity(0.1), in: Circle()) } }
-            if tracks.isEmpty { Spacer(); Image(systemName: "waveform").font(.system(size: 34)).foregroundColor(ink.opacity(0.2)); Text(text("quiet_library")).font(.system(size: 15, weight: .semibold)).foregroundColor(ink.opacity(0.5)); Button(text("import_music")) { pickerFolders = true; showPicker = true }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundColor(accent).padding(.top, 4); Spacer() }
+            HStack { Text("\(text("library_title")) / \(tracks.count)").font(.system(size: 10, weight: .black, design: .monospaced)).foregroundColor(ink.opacity(0.48)); Spacer(); Button { pickerMode = .audio } label: { Image(systemName: "plus").foregroundColor(accent).frame(width: 34, height: 34).background(accent.opacity(0.1), in: Circle()) } }
+            if tracks.isEmpty { Spacer(); Image(systemName: "waveform").font(.system(size: 34)).foregroundColor(ink.opacity(0.2)); Text(text("quiet_library")).font(.system(size: 15, weight: .semibold)).foregroundColor(ink.opacity(0.5)); Button(text("import_music")) { pickerMode = .folder }.font(.system(size: 10, weight: .black, design: .monospaced)).foregroundColor(accent).padding(.top, 4); Spacer() }
             else { ScrollView { LazyVStack(spacing: 5) { ForEach(tracks) { track in trackRow(track) } }.padding(.vertical, 2) } }
         }.padding(.top, 12)
     }
@@ -274,9 +274,16 @@ private struct DocumentPicker: UIViewControllerRepresentable {
     let onPick: ([URL]) -> Void
     func makeCoordinator() -> Coordinator { Coordinator(onPick: onPick) }
     func makeUIViewController(context: Context) -> UIDocumentPickerViewController {
-        let types: [UTType] = folders ? [.folder] : [.audio, UTType(filenameExtension: "flac") ?? .audio]
-        let picker = UIDocumentPickerViewController(forOpeningContentTypes: types, asCopy: false)
-        picker.allowsMultipleSelection = !folders; picker.delegate = context.coordinator; return picker
+        let picker: UIDocumentPickerViewController
+        if folders {
+            picker = UIDocumentPickerViewController(forOpeningContentTypes: [UTType.folder], asCopy: false)
+            picker.allowsMultipleSelection = false
+        } else {
+            picker = UIDocumentPickerViewController(forOpeningContentTypes: [.audio, UTType(filenameExtension: "flac") ?? .audio], asCopy: false)
+            picker.allowsMultipleSelection = true
+        }
+        picker.delegate = context.coordinator
+        return picker
     }
     func updateUIViewController(_ uiViewController: UIDocumentPickerViewController, context: Context) { }
     final class Coordinator: NSObject, UIDocumentPickerDelegate { let onPick: ([URL]) -> Void; init(onPick: @escaping ([URL]) -> Void) { self.onPick = onPick }; func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) { onPick(urls) } }
