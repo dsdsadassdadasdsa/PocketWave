@@ -11,6 +11,7 @@ final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegat
     @Published var duration: TimeInterval = 0
     @Published var isShuffle = false
     @Published var repeatMode: RepeatMode = .off
+    @Published var playbackError: String?
     private var audioPlayer: AVAudioPlayer?
     private var queue: [Track] = []
     private var timer: Timer?
@@ -22,11 +23,12 @@ final class AudioPlayerManager: NSObject, ObservableObject, AVAudioPlayerDelegat
     func play(_ track: Track, from tracks: [Track]) {
         queue = tracks
         currentTrack = track
+        playbackError = nil
         do {
             let p = try AVAudioPlayer(contentsOf: track.url)
             p.delegate = self; p.prepareToPlay(); audioPlayer = p; duration = p.duration; currentTime = 0
             p.play(); isPlaying = true; startTimer(); updateNowPlaying(); haptic(.medium)
-        } catch { isPlaying = false }
+        } catch { isPlaying = false; playbackError = error.localizedDescription }
     }
     func togglePlayPause() { guard let audioPlayer else { return }; if audioPlayer.isPlaying { audioPlayer.pause(); isPlaying = false } else { audioPlayer.play(); isPlaying = true }; updateNowPlaying(); haptic(.light) }
     func seek(to value: Double) { audioPlayer?.currentTime = value; currentTime = value; updateNowPlaying(); haptic(.selection) }

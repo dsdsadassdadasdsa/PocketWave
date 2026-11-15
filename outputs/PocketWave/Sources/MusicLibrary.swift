@@ -11,11 +11,14 @@ final class MusicLibrary: ObservableObject {
     private let tracksKey = "PocketWaveTracks_v1"
     private let playlistsURL: URL
     private let bookmarkURL: URL
+    private let importedAudioURL: URL
 
     init() {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         playlistsURL = docs.appendingPathComponent("playlists.json")
         bookmarkURL = docs.appendingPathComponent("music-folder.bookmark")
+        importedAudioURL = docs.appendingPathComponent("ImportedAudio", isDirectory: true)
+        try? FileManager.default.createDirectory(at: importedAudioURL, withIntermediateDirectories: true)
         if let data = UserDefaults.standard.data(forKey: tracksKey), let saved = try? JSONDecoder().decode([Track].self, from: data) { tracks = saved }
         if let data = try? Data(contentsOf: playlistsURL), let saved = try? JSONDecoder().decode([MusicPlaylist].self, from: data) { playlists = saved }
         restoreFolderBookmark()
@@ -27,7 +30,7 @@ final class MusicLibrary: ObservableObject {
             let access = url.startAccessingSecurityScopedResource()
             defer { if access { url.stopAccessingSecurityScopedResource() } }
             if url.hasDirectoryPath { scanFolder(url, makeBookmark: true) }
-            else if Self.isAudio(url) { addTrack(url) }
+            else if Self.isAudio(url) { importAudioFile(url) }
         }
         persistTracks()
     }
@@ -37,7 +40,7 @@ final class MusicLibrary: ObservableObject {
         defer { if access { folder.stopAccessingSecurityScopedResource() } }
         if makeBookmark, let data = try? folder.bookmarkData(options: [], includingResourceValuesForKeys: nil, relativeTo: nil) { try? data.write(to: bookmarkURL, options: .atomic) }
         guard let enumerator = FileManager.default.enumerator(at: folder, includingPropertiesForKeys: [.isRegularFileKey], options: [.skipsHiddenFiles]) else { return }
-        while let file = enumerator.nextObject() as? URL { if Self.isAudio(file) { addTrack(file) } }
+        while let file = enumerator.nextObject() as? URL { if Self.isAudio(file) { importAudioFile(file) } }
         persistTracks()
     }
 
@@ -49,9 +52,39 @@ final class MusicLibrary: ObservableObject {
 
     func scanDocuments() {
         let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        guard let files = try? FileManager.default.contentsOfDirectory(at: docs, includingPropertiesForKeys: nil) else { return }
-        files.filter(Self.isAudio).forEach(addTrack)
+        guard let enumerator = FileManager.default.enumerator(at: docs, includingPropertiesForKeys: nil, options: [.skipsHiddenFiles]) else { return }
+        while let file = enumerator.nextObject() as? URL { if Self.isAudio(file) { addTrack(file) } }
         persistTracks()
+    }
+
+    private func importAudioFile(_ source: URL) {
+        let sourceSize = (try? FileManager.default.attributesOfItem(atPath: source.path)[.size] as? NSNumber)?.int64Value
+        if let index = tracks.firstIndex(where: { track in
+            guard track.url.lastPathComponent == source.lastPathComponent, let sourceSize,
+                  let trackSize = (try? FileManager.default.attributesOfItem(atPath: track.url.path)[.size] as? NSNumber)?.int64Value else { return false }
+            return sourceSize == trackSize
+        }) {
+            if tracks[index].url.path.hasPrefix(importedAudioURL.path) { return }
+            if let localCopy = copyIntoLibrary(source) { tracks[index].url = localCopy; persistTracks() }
+            return
+        }
+        if let localCopy = copyIntoLibrary(source) { addTrack(localCopy) }
+    }
+
+    private func copyIntoLibrary(_ source: URL) -> URL? {
+        var destination = importedAudioURL.appendingPathComponent(source.lastPathComponent)
+        var suffix = 2
+        while FileManager.default.fileExists(atPath: destination.path) {
+            destination = importedAudioURL.appendingPathComponent("\(source.deletingPathExtension().lastPathComponent)-\(suffix).\(source.pathExtension)")
+            suffix += 1
+        }
+        do {
+            try FileManager.default.copyItem(at: source, to: destination)
+            return destination
+        } catch {
+            importMessage = "Could not import \(source.lastPathComponent): \(error.localizedDescription)"
+            return nil
+        }
     }
 
     private static func isAudio(_ url: URL) -> Bool { ["mp3", "m4a", "wav", "flac"].contains(url.pathExtension.lowercased()) }
