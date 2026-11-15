@@ -26,18 +26,26 @@ final class MusicLibrary: ObservableObject {
     }
 
     func importURLs(_ urls: [URL]) {
+        importMessage = nil
+        guard !urls.isEmpty else { importMessage = "Files did not return a selected item."; return }
+        let oldCount = tracks.count
         for url in urls {
-            guard url.startAccessingSecurityScopedResource() else { importMessage = "The selected item is not accessible."; continue }
+            let hasScopedAccess = url.startAccessingSecurityScopedResource()
             do {
-                defer { url.stopAccessingSecurityScopedResource() }
+                defer { if hasScopedAccess { url.stopAccessingSecurityScopedResource() } }
                 if Self.isDirectory(url) {
-                    scanFolder(url, makeBookmark: true, alreadyAccessing: true)
+                    scanFolder(url, makeBookmark: true, alreadyAccessing: hasScopedAccess)
                 } else if Self.isAudio(url) {
                     importAudioFile(url)
+                } else {
+                    importMessage = "The selected item is not a supported audio file or folder."
                 }
             }
         }
         persistTracks()
+        if tracks.count == oldCount, importMessage == nil {
+            importMessage = "No playable audio files were imported. Check that the folder contains MP3, M4A, WAV or FLAC files."
+        }
     }
 
     func scanFolder(_ folder: URL, makeBookmark: Bool = false, alreadyAccessing: Bool = false) {
@@ -48,20 +56,21 @@ final class MusicLibrary: ObservableObject {
         let coordinator = NSFileCoordinator(filePresenter: nil)
         var coordinationError: NSError?
         var foundAudioFiles = 0
+        let oldCount = tracks.count
         coordinator.coordinate(readingItemAt: folder, options: [], error: &coordinationError) { coordinatedFolder in
             guard let enumerator = FileManager.default.enumerator(at: coordinatedFolder, includingPropertiesForKeys: [.isRegularFileKey, .isDirectoryKey], options: [.skipsHiddenFiles]) else { importMessage = "Files could not list this folder."; return }
             while let file = enumerator.nextObject() as? URL {
                 guard Self.isAudio(file) else { continue }
                 foundAudioFiles += 1
-                guard file.startAccessingSecurityScopedResource() else { continue }
-                do {
-                    defer { file.stopAccessingSecurityScopedResource() }
-                    importAudioFile(file)
-                }
+                // A folder picker grants access to the selected folder tree, not a separate
+                // security-scoped URL for each child. Read and copy children while the
+                // coordinated folder access remains active.
+                importAudioFile(file, alreadyCoordinated: true)
             }
         }
         if let coordinationError { importMessage = "Folder access failed: \(coordinationError.localizedDescription)" }
-        else if makeBookmark && foundAudioFiles == 0 { importMessage = "No MP3, M4A or WAV files were found in the selected folder." }
+        else if foundAudioFiles == 0 { importMessage = "No MP3, M4A, WAV or FLAC files were found in the selected folder." }
+        else if tracks.count == oldCount, importMessage == nil { importMessage = "Audio files were found, but none could be copied into the app. Re-select the folder in Files and try again." }
         persistTracks()
     }
 
@@ -78,7 +87,20 @@ final class MusicLibrary: ObservableObject {
         persistTracks()
     }
 
-    private func importAudioFile(_ source: URL) {
+    private func importAudioFile(_ source: URL, alreadyCoordinated: Bool = false) {
+        if alreadyCoordinated {
+            importAudioFileContent(source)
+            return
+        }
+        let coordinator = NSFileCoordinator(filePresenter: nil)
+        var coordinationError: NSError?
+        coordinator.coordinate(readingItemAt: source, options: [], error: &coordinationError) { coordinatedSource in
+            importAudioFileContent(coordinatedSource)
+        }
+        if let coordinationError { importMessage = "Could not read \(source.lastPathComponent): \(coordinationError.localizedDescription)" }
+    }
+
+    private func importAudioFileContent(_ source: URL) {
         let sourceSize = (try? FileManager.default.attributesOfItem(atPath: source.path)[.size] as? NSNumber)?.int64Value
         if let index = tracks.firstIndex(where: { track in
             guard track.url.lastPathComponent == source.lastPathComponent, let sourceSize,
@@ -100,6 +122,7 @@ final class MusicLibrary: ObservableObject {
             suffix += 1
         }
         do {
+            try FileManager.default.createDirectory(at: importedAudioURL, withIntermediateDirectories: true)
             try FileManager.default.copyItem(at: source, to: destination)
             return destination
         } catch {
